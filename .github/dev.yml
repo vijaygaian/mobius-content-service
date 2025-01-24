@@ -1,0 +1,145 @@
+# This workflow to test EKS connections and deploy service in kubernetes cluster.
+
+name: CI with Java Spring Boot repo, maven build tool, packaging & pushing as image to ECR, Testing
+
+# Events
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+    #     types: [ opened, edited, reopened, closed ]
+    types: [ closed ]
+
+env:
+  ENVIRONMENT: prod
+  CONSUL_HOST: consul-server.consul.svc.cluster.local
+  CONSUL_PORT: 8500
+  #   APM_URL: skywalking-oap.DEV-mobius.svc.cluster.local:11800
+  SERVICE_CODE: mobius-content-service
+  SWAGGER: http://ig.gaiansolutions.com/
+  ARTIFACT_RETENTION_DAYS: 10
+  NEXUS_REPO_URL: http://dev-nexus-lib.gaiansolutions.com:8081/repository/releases
+  NEXUS_USERNAME: ${{ secrets.DEV_NEXUS_USERNAME }}
+  NEXUS_PASSWORD: ${{ secrets.DEV_NEXUS_PASSWORD }}
+  BASE_URL: http://ig.gaiansolutions.com
+  CODE_PATH: /home/runner/work/mobius-content-service/mobius-content-service
+  DEPLOYMENT_PLATFORM: dev
+
+  #For BVT
+  API_ENV: API_K8S
+
+# Workflow defination
+jobs:
+  ########## job to build the package and deploy to sonar for code analysis
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      deploymentPlatform: ${{ steps.init.outputs.deploymentPlatform }}
+
+    steps:
+      - name: Environment variables to output
+        id: init
+        run: |
+          echo "deploymentPlatform=${{ env.DEPLOYMENT_PLATFORM }}" >> $GITHUB_OUTPUT
+
+  RUN_ON_DEV:
+
+    name: RUN_ON_DEV
+    needs: build
+    runs-on: ubuntu-latest
+
+    if: needs.build.outputs.deploymentPlatform == 'dev'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v1
+        with:
+          java-version: 21
+          # distribution: 'zulu'
+
+      # Step that does that actual cache save and restore
+      - name: caching dependancies for subsequent runs
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Setup Gaian Nexus Repo credentials
+        uses: s4u/maven-settings-action@v2.4.0
+        with:
+          servers: |
+            [{
+              "id": "nexus",
+              "username": "${{ secrets.DEV_NEXUS_USERNAME }}",
+              "password": "${{ secrets.DEV_NEXUS_PASSWORD }}"
+            }]
+          mirrors: |
+            [{
+              "id": "nexus",
+              "name": "nexus",
+              "mirrorOf": "nexus",
+              "url": "http://dev-nexus-lib.gaiansolutions.com:8081/repository/releases/",
+              "blocked": false
+            }]
+
+      - name: Run Unit Tests, publish coverage to Sonar
+        run: mvn -DskipTests -Dnexus-public=http://dev-nexus-lib.gaiansolutions.com:8081/nexus/content/groups/public -Dnexus-release=http://dev-nexus-lib.gaiansolutions.com:8081/repository/releases -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=$SERVICE_CODE -Dsonar.projectName=$SERVICE_CODE -Dsonar.host.url=${{ secrets.SONAR_HOST }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dproject.version=${{ steps.version.outputs.version }} 
+
+      - name: Environment variables to output
+        id: init
+        run: |
+          echo "DEPLOYMENT_PLATFORM=${{ env.DEPLOYMENT_PLATFORM }}" >> $GITHUB_OUTPUT        
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker Build, tag, push image to Amazon ECR, and deploy in EKS using kubernetes
+        id: build-image
+        env:
+          ECR_REPOSITORY: ${{ env.ENVIRONMENT }}
+          IMAGE_TAG: ${{ github.sha }}
+          C_HOST: ${{ env.CONSUL_HOST }}
+          C_PORT: ${{ env.CONSUL_PORT }}
+          APM_URL: ${{ env.APM_URL }}
+
+        run: |
+          # Build a docker container and
+          # steps.version.outputs.version
+          # push it to ECR so that it can
+          # be deployed to ECS/EKS
+          # sed -i'' -e "s/\$consul_url/$C_HOST/g" -e "s/\$consul_port/$C_PORT/g" -e "s/ENVIRONMENT/$ECR_REPOSITORY/g" -e "s/\$apm_url/$APM_URL/g" docker/startup.sh
+          sed -i'' -e "s/\$consul_url/$C_HOST/g" -e "s/\$consul_port/$C_PORT/g" -e "s/ENVIRONMENT/$ECR_REPOSITORY/g" docker/startup.sh
+          cat docker/startup.sh | grep consul
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mobius-content-service:$IMAGE_TAG -f docker/Dockerfile .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/mobius-content-service:$IMAGE_TAG
+
+      - name: Update deployment file
+        run: |
+          OLD_CONTENT=$(curl -H "Authorization: Bearer ${{ secrets.K8_REPO_ACCESS_SECRET }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/gaiangroup/k8s-files-dev/contents/dev/deployment/mobius-content-service.yml | jq -r .content)
+
+          # Modify the image tag in the OLD_CONTENT
+          NEW_CONTENT=$(echo "$OLD_CONTENT" | base64 -d | sed "s|image: gaianmobius/mobius-content-service:[a-zA-Z0-9]*|image: gaianmobius/mobius-content-service:${{ github.sha }}|g" | base64 -w0)
+
+          # Fetch the current SHA hash
+          SHA=$(curl -H "Authorization: Bearer ${{ secrets.K8_REPO_ACCESS_SECRET }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/gaiangroup/k8s-files-dev/contents/dev/deployment/mobius-content-service.yml | jq -r .sha)
+
+          curl -X PUT \
+            -H "Authorization: Bearer ${{ secrets.K8_REPO_ACCESS_SECRET }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/gaiangroup/k8s-files-dev/contents/dev/deployment/mobius-content-service.yml \
+            -d '{
+              "message": "Update deployment image",
+              "content": "'$NEW_CONTENT'",
+              "sha": "'$SHA'",
+              "branch": "qa"
+            }'

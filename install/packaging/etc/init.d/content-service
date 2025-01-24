@@ -1,0 +1,66 @@
+#!/bin/bash
+#set -x
+### BEGIN INIT INFO
+# Provides:          <PACKAGE_NAME>
+# Short-Description: Start/stop <PACKAGE_NAME>
+### END INIT INFO
+
+echoRed() { echo '\033[0;31m'"$1"'\033[0m'; }
+echoGreen() { echo '\033[0;32m'"$1"'\033[0m'; }
+echoYellow() { echo '\033[0;33m'"$1"'\033[0m'; }
+
+
+PACKAGE_NAME="<PACKAGE_NAME>"
+INSTALL_DIR="<INSTALL_DIR>"
+LOG_DIR="<LOG_DIR>"
+ENV="<ENVIRONMENT>"
+CONFIG_INSTALL_DIR="<CONFIG_INSTALL_DIR>"
+PID_FILE="<PID_FILE>"
+
+LOG_FILE=content-service.log
+
+SLEEP_TIME_FOR_STOP=10
+SLEEP_TIME_FOR_START=10
+#APP_HTTP_PORT="29031"
+#APP_JMX_PORT="29032"
+#APP_ADMIN_PORT="29035"
+#JAVA_HOME=/usr/lib/jvm/java-7-oracle
+
+
+restart_service() {
+ stop_service
+ start_service
+}
+
+start_service() {
+    echo "Starting ${PACKAGE_NAME}.."
+    echo "env ${ENV}"
+    java -jar -Dfile.encoding=UTF-8 -Dspring.config.location=${CONFIG_INSTALL_DIR}/ -Dlogging.config=${CONFIG_INSTALL_DIR}/logback-spring.xml -Dlogfile.location=$LOG_DIR/$LOG_FILE -Dspring.profiles.active=$ENV $INSTALL_DIR/content-service.jar - >> $LOG_DIR/$LOG_FILE 2>&1 &
+    echo $! > "${PID_FILE}"
+    sleep $SLEEP_TIME_FOR_START
+}
+
+stop_service()  {
+#TODO: modify this.
+    echo "Stopping ${PACKAGE_NAME}.."
+    PID=`cat "${PID_FILE}"`
+    echo $PID
+    kill $PID
+    sleep $SLEEP_TIME_FOR_STOP
+}
+
+
+case "$1" in
+    start)
+        start_service
+        ;;
+    stop)
+        stop_service
+        ;;
+    restart)
+        restart_service
+        ;;
+    *)    echo "USAGE: $0 restart|start|stop|OOR|BIR|force_kill|status"
+        exit 3
+        ;;
+esac

@@ -1,0 +1,1 @@
+[ "nginx.scheme", "content.port", "nginx.port", "content.path", "nginx.path", "content.scheme","content.host", "nginx.host", "files.upload-dir", "zip.extension"]

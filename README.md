@@ -1,2 +1,1 @@
-# mobius-content-service-tekton
-tekton testing
+# content-service

@@ -1,0 +1,37 @@
+name: Mobius Caller Workflow
+
+ 
+on:
+  push:
+    branches: [ dev, prod, master, '*' ]
+jobs:
+  dev_job:
+    if: github.ref == 'refs/heads/dev'
+    uses: gaiangroup/workflow-manager/.github/workflows/mvn-dev.yml@dev
+    with:
+      SERVICE_CODE: mobius-content-service
+      SONAR_SCAN: false
+    secrets: inherit
+
+  prod_job:
+    if: github.ref == 'refs/heads/prod'
+    uses: gaiangroup/workflow-manager/.github/workflows/mvn-prod.yml@dev
+    with:
+      SERVICE_CODE: mobius-content-service
+      SONAR_SCAN: false
+    secrets: inherit
+
+  master_job:
+    if: github.ref == 'refs/heads/master'
+    uses: gaiangroup/workflow-manager/.github/workflows/mvn-master.yml@dev
+    with:
+      SERVICE_CODE: mobius-content-service
+      SONAR_SCAN: false
+    secrets: inherit
+
+  unauthorized_branch_job:
+    if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/prod'
+    runs-on: ubuntu-latest
+    steps:
+      - name: This is not an authorized branch, please Run on DEV or Prod or master Branch
+        run: echo "This is not an authorized branch. please Run on DEV or Prod or master Branch"

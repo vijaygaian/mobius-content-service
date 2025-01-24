@@ -1,0 +1,15 @@
+#!/bin/sh -e
+set -x
+
+PACKAGE_NAME="<PACKAGE_NAME>"
+INSTALL_DIR="<INSTALL_DIR>"
+LOG_DIR="<LOG_DIR>"
+INIT_PATH="<INIT_PATH>"
+
+if [ "$1" == "purge" ]; then
+    [ -d "${LOG_DIR}" ] && rm -rf "${LOG_DIR}"
+    [ -d "${INSTALL_DIR}" ] && rm -rf "${INSTALL_DIR}"
+    [ -e "${INIT_PATH}" ] && rm -rf "${INIT_PATH}"
+
+fi
+exit 0

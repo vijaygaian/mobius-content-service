@@ -1,0 +1,54 @@
+#!/bin/sh -e
+
+set -x
+
+echoRed() { echo '\033[0;31m'"$1"'\033[0m'; }
+echoGreen() { echo '\033[0;32m'"$1"'\033[0m'; }
+echoYellow() { echo '\033[0;33m'"$1"'\033[0m'; }
+
+GROUP_NAME=content-service
+GROUP_ID=2556
+USER_NAME=content-service
+USER_ID=4610
+
+
+ENVIRONMENT="<ENVIRONMENT>"
+PACKAGE_NAME="<PACKAGE_NAME>"
+INSTALL_DIR="<INSTALL_DIR>"
+LOG_DIR="<LOG_DIR>"
+INIT_PATH="<INIT_PATH>"
+CONFIG_PATH="<CONFIG_INSTALL_DIR>"
+CONFIG_LOCATION="<CONFIG_LOCATION>"
+
+
+        echoYellow "Checking for users and groups..."
+        if ! getent group $GROUP_NAME > /dev/null; then
+            groupadd -g $GROUP_ID $GROUP_NAME
+            echoGreen "Group: $GROUP_NAME with id: $GROUP_ID created"
+        else
+            echoGreen "Group $GROUP_ID:$GROUP_NAME already found. Not creating."
+        fi
+
+        if ! getent passwd $USER_NAME > /dev/null; then
+            useradd -g $GROUP_ID -u $USER_ID $USER_NAME
+            echoGreen "User: $USER_NAME with id: $USER_ID added to group: $GROUP_NAME"
+        else
+            echoGreen "User $USER_ID:$USER_NAME already found under group: $GROUP_NAME. Not creating."
+        fi
+
+        [ ! -d "$LOG_DIR" ] && mkdir -p $LOG_DIR
+
+        chown -Rf $USER_ID:$GROUP_ID $LOG_DIR
+        chown -Rf $USER_ID:$GROUP_ID $INIT_PATH
+        chown -Rf $USER_ID:$GROUP_ID $INSTALL_DIR
+        chown -Rf $USER_ID:$GROUP_ID $CONFIG_PATH
+
+
+        chmod -R 777 $LOG_DIR
+        chmod -R 777 $INIT_PATH
+        chmod -R 777 $INSTALL_DIR
+        chmod -R 777 $CONFIG_PATH
+
+        #$INIT_PATH start
+
+        exit 0

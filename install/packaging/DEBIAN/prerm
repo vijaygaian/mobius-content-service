@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+PACKAGE_NAME="<PACKAGE_NAME>"
+INIT_PATH="<INIT_PATH>"
+
+if [ -f $INIT_PATH ];then
+  echo "Stopped the ${PACKAGE_NAME} server"
+  $INIT_PATH stop
+fi
