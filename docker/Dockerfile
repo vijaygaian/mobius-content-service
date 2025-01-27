@@ -29,7 +29,7 @@ RUN mkdir -p /root/.m2 \
         <mirror> \
             <id>nexus</id> \
             <name>nexus</name>\
-            <mirrorOf>*</mirrorOf> \
+            <mirrorOf>nexus</mirrorOf> \
             <url>${NEXUS_URL}</url> \
         </mirror> \
     </mirrors> \
