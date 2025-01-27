@@ -61,9 +61,10 @@ RUN mvn clean install -DskipTests
 # Rename the JAR file
 RUN for file in /build/target/${SPRING_APPLICATION_NAME}*.jar; do \
     if [ -e "$file" ] && [ "$file" != "/build/target/${SPRING_APPLICATION_NAME}.jar" ]; then \
-        mv "$file" /build/target/${SPRING_APPLICATION_NAME}.jar && break; \
+        mv "$file" /build/target/${SPRING_APPLICATION_NAME}.jar && ls -lart /build/target && break; \
     fi; \
     done
+RUN ls -lart /build/target
 
 # Clean up Maven settings and source files to reduce image size
 RUN rm -rf /root/.m2/settings.xml \
