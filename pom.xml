@@ -10,7 +10,7 @@
     <version>3.1.5</version>
     <relativePath/>
   </parent>
-  <groupId>com.aidtaas.mobius.services</groupId>
+  <groupId>com.aidtaas.mobius</groupId>
   <artifactId>mobius-content-service</artifactId>
   <version>0.0.3-SNAPSHOT</version>
   <name>mobius-content-service</name>
