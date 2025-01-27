@@ -308,7 +308,7 @@
   <repositories>
     <repository>
       <id>nexus</id>
-      <url>${nexus-releases}</url>
+      <url>http://nexus-lib.aidtaas.com:8081/repository/releases</url>
       <name>nexus</name>
       <releases>
         <enabled>true</enabled>
@@ -322,7 +322,7 @@
     <pluginRepository>
       <id>nexus</id>
       <name>nexus</name>
-      <url>${nexus-public}</url>
+      <url>http://nexus-lib.aidtaas.com:8081/repository/public</url>
     </pluginRepository>
   </pluginRepositories>
 </project>
