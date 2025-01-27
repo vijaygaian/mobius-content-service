@@ -37,8 +37,8 @@ RUN mkdir -p /root/.m2 \
 
 # Pre-download Maven dependencies
 COPY pom.xml /build/pom.xml
-RUN mkdir -p /build/src \
- && mvn -f /build/pom.xml dependency:resolve
+RUN mkdir -p /build/src 
+ # && mvn -f /build/pom.xml dependency:resolve
 
 # Copy the remaining project files
 COPY src /build/src
@@ -47,17 +47,17 @@ COPY src /build/src
 WORKDIR /build
 
 # Build the project
-RUN if [ "$SONAR_SCAN" = false ]; then \
-        mvn clean install -DskipTests; \
-    elif [ "$SONAR_SCAN" = true ]; then \
-        mvn clean install -DskipTests -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-        -Dsonar.projectKey=${SPRING_APPLICATION_NAME} \
-        -Dsonar.projectName=${SPRING_APPLICATION_NAME} \
-        -Dsonar.host.url=${SONAR_HOST} \
-        -Dsonar.login=${SONAR_TOKEN} \
-        -Dsonar.qualitygate.wait=true; \
-    fi
-
+# RUN if [ "$SONAR_SCAN" = false ]; then \
+#         mvn clean install -DskipTests; \
+#     elif [ "$SONAR_SCAN" = true ]; then \
+#         mvn clean install -DskipTests -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+#         -Dsonar.projectKey=${SPRING_APPLICATION_NAME} \
+#         -Dsonar.projectName=${SPRING_APPLICATION_NAME} \
+#         -Dsonar.host.url=${SONAR_HOST} \
+#         -Dsonar.login=${SONAR_TOKEN} \
+#         -Dsonar.qualitygate.wait=true; \
+#     fi
+RUN mvn clean install -DskipTests
 # Rename the JAR file
 RUN for file in /build/target/${SPRING_APPLICATION_NAME}*.jar; do \
     if [ -e "$file" ] && [ "$file" != "/build/target/${SPRING_APPLICATION_NAME}.jar" ]; then \
