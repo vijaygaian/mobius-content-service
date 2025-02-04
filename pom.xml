@@ -12,7 +12,7 @@
   </parent>
   <groupId>com.aidtaas.mobius</groupId>
   <artifactId>mobius-content-service</artifactId>
-  <version>0.0.55</version>
+  <version>0.0.56</version>
   <name>mobius-content-service</name>
   <description>gaian content service application</description>
 
