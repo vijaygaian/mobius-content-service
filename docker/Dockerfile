@@ -46,7 +46,7 @@ COPY src /build/src
 # Change working directory
 WORKDIR /build
 
-Build the project
+#Build the project
 RUN if [ "$SONAR_SCAN" = false ]; then \
         mvn clean install -DskipTests; \
     elif [ "$SONAR_SCAN" = true ]; then \
