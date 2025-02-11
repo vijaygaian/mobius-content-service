@@ -46,18 +46,18 @@ COPY src /build/src
 # Change working directory
 WORKDIR /build
 
-# Build the project
-# RUN if [ "$SONAR_SCAN" = false ]; then \
-#         mvn clean install -DskipTests; \
-#     elif [ "$SONAR_SCAN" = true ]; then \
-#         mvn clean install -DskipTests -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-#         -Dsonar.projectKey=${SPRING_APPLICATION_NAME} \
-#         -Dsonar.projectName=${SPRING_APPLICATION_NAME} \
-#         -Dsonar.host.url=${SONAR_HOST} \
-#         -Dsonar.login=${SONAR_TOKEN} \
-#         -Dsonar.qualitygate.wait=true; \
-#     fi
-RUN mvn clean install -DskipTests
+Build the project
+RUN if [ "$SONAR_SCAN" = false ]; then \
+        mvn clean install -DskipTests; \
+    elif [ "$SONAR_SCAN" = true ]; then \
+        mvn clean install -DskipTests -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        -Dsonar.projectKey=${SPRING_APPLICATION_NAME} \
+        -Dsonar.projectName=${SPRING_APPLICATION_NAME} \
+        -Dsonar.host.url=${SONAR_HOST} \
+        -Dsonar.login=${SONAR_TOKEN} \
+        -Dsonar.qualitygate.wait=true; \
+    fi
+# RUN mvn clean install -DskipTests
 # Rename the JAR file
 RUN for file in /build/target/${SPRING_APPLICATION_NAME}*.jar; do \
     if [ -e "$file" ] && [ "$file" != "/build/target/${SPRING_APPLICATION_NAME}.jar" ]; then \
